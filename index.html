@@ -26,6 +26,11 @@
                     <h2>Step 2: Download QC Reports</h2>
                     
                     <button id="downloadBtn" style="background-color: #059669;">Download Matching Reports</button>
+                    
+                    <div style="margin-top: 15px; padding: 12px; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; color: #374151; line-height: 1.5;">
+                        ⚠️ <i><b>Important:</b> To download reports, your computer must be actively synced with the Proteor OneDrive folder (QualityControlDataSync - GC_Outgoing_QC). Ensure the OneDrive cloud icon by your clock is running and up to date.</i>
+                    </div>
+
                     <div id="downloadResults" style="margin-top: 15px; text-align: center;"></div>
                 </div>
             </div>
@@ -65,8 +70,6 @@
             extractBtn.disabled = true;
             extractBtn.innerText = "Processing OCR (This may take a minute)...";
             resultsArea.style.display = 'block';
-            
-            // CHANGED: Removed technical jargon from the loading state
             resultsArea.innerHTML = "Reading document, please wait...";
 
             const response = await window.electronAPI.extractData(currentFilePath);
@@ -81,14 +84,13 @@
                 });
                 gridHtml += '</div>';
 
-                // CHANGED: Trimmed down the warning message to be more direct
                 resultsArea.innerHTML = `
                     <div style="margin-bottom: 15px;">
                         <div class="success-text" style="margin-bottom: 10px; font-size: 16px;">Success! Found ${response.count} serial numbers:</div>
                         <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 4px; font-size: 13px; color: #92400e; display: flex; align-items: flex-start; gap: 10px;">
                             <span style="font-size: 16px;">⚠️</span>
                             <div>
-                                <strong>ACTION REQUIRED:</strong> You must visually verify these numbers against the physical document. Click any box to correct errors before downloading.
+                                <strong>ACTION REQUIRED:</strong> You must visually verify these numbers against the physical document. Click any box to correct errors before proceeding to step 2.
                             </div>
                         </div>
                     </div>` + gridHtml;
