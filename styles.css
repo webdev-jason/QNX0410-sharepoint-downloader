@@ -1,0 +1,84 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f3f4f6;
+    color: #1f2937;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.container {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 800px;
+}
+
+h2 {
+    margin-top: 0;
+    text-align: center;
+}
+
+button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+button:hover { 
+    background-color: #1d4ed8; 
+}
+
+button:disabled { 
+    background-color: #9ca3af; 
+    cursor: not-allowed; 
+}
+
+#filePathDisplay {
+    font-size: 13px;
+    color: #4b5563;
+    margin-bottom: 20px;
+    word-break: break-all;
+    min-height: 20px;
+    text-align: center;
+}
+
+#resultsArea {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+}
+
+/* --- CSS Grid Layout --- */
+.serial-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.serial-item {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    padding: 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    text-align: center;
+    color: #111827;
+}

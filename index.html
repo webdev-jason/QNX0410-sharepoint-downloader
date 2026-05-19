@@ -2,65 +2,13 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'">
     <title>QNX0410 Extraction & Downloader</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 600px;
-        }
-        button {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-bottom: 10px;
-            width: 100%;
-            transition: background-color 0.2s;
-        }
-        button:hover { background-color: #1d4ed8; }
-        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
-        
-        #filePathDisplay {
-            font-size: 13px;
-            color: #4b5563;
-            margin-bottom: 20px;
-            word-break: break-all;
-            min-height: 20px;
-        }
-        #resultsArea {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            max-height: 250px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 14px;
-            display: none;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h2 style="margin-top: 0;">Step 1: Extract Serial Numbers</h2>
+        <h2>Step 1: Extract Serial Numbers</h2>
         
         <button id="selectBtn">Select PDF Scan</button>
         <div id="filePathDisplay">No file selected</div>
@@ -84,7 +32,7 @@
             if (filePath) {
                 currentFilePath = filePath;
                 filePathDisplay.innerText = "Selected: " + filePath;
-                extractBtn.disabled = false; // Enable the next button
+                extractBtn.disabled = false;
                 resultsArea.style.display = 'none';
             }
         });
@@ -97,7 +45,7 @@
             extractBtn.disabled = true;
             extractBtn.innerText = "Processing OCR (This may take a minute)...";
             resultsArea.style.display = 'block';
-            resultsArea.innerText = "Initializing Tesseract Engine...";
+            resultsArea.innerHTML = "Initializing Tesseract Engine...";
 
             // Call Python through the bridge
             const response = await window.electronAPI.extractData(currentFilePath);
@@ -108,8 +56,14 @@
 
             // Display Results
             if (response.success) {
-                resultsArea.innerHTML = `<strong>Success! Found ${response.count} serial numbers:</strong><br><br>` + 
-                                        response.serial_numbers.join('<br>');
+                // Build the CSS Grid HTML dynamically
+                let gridHtml = '<div class="serial-grid">';
+                response.serial_numbers.forEach(sn => {
+                    gridHtml += `<div class="serial-item">${sn}</div>`;
+                });
+                gridHtml += '</div>';
+
+                resultsArea.innerHTML = `<strong style="color: #059669;">Success! Found ${response.count} serial numbers:</strong>` + gridHtml;
             } else {
                 resultsArea.innerHTML = `<strong style="color: red;">Error:</strong><br>${response.error}`;
             }
