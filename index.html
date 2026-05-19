@@ -9,24 +9,40 @@
 <body>
     <div class="container">
         <h2>Step 1: Extract Serial Numbers</h2>
-        
         <button id="selectBtn">Select PDF Scan</button>
         <div id="filePathDisplay">No file selected</div>
-        
         <button id="extractBtn" disabled>Run Extraction Engine</button>
         
         <div id="resultsArea"></div>
+
+        <div id="step2Container" style="display: none;">
+            <hr>
+            <h2>Step 2: Download QC Reports</h2>
+            <p style="font-size: 13px; text-align: center; color: #4b5563; margin-top: -10px; margin-bottom: 15px;">
+                <i>Review the serial numbers above. You can click into any box to correct OCR mistakes before downloading.</i>
+            </p>
+            <button id="downloadBtn" style="background-color: #059669;">Download Matching Reports</button>
+            <div id="downloadResults" style="margin-top: 15px; text-align: center;"></div>
+        </div>
     </div>
 
     <script>
+        // State variables
         let currentFilePath = null;
+        let finalDestinationFolder = null;
         
+        // Step 1 Elements
         const selectBtn = document.getElementById('selectBtn');
         const extractBtn = document.getElementById('extractBtn');
         const filePathDisplay = document.getElementById('filePathDisplay');
         const resultsArea = document.getElementById('resultsArea');
+        
+        // Step 2 Elements
+        const step2Container = document.getElementById('step2Container');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadResults = document.getElementById('downloadResults');
 
-        // 1. Handle File Selection
+        // --- STEP 1 LOGIC ---
         selectBtn.addEventListener('click', async () => {
             const filePath = await window.electronAPI.selectPdf();
             if (filePath) {
@@ -34,38 +50,84 @@
                 filePathDisplay.innerText = "Selected: " + filePath;
                 extractBtn.disabled = false;
                 resultsArea.style.display = 'none';
+                step2Container.style.display = 'none';
             }
         });
 
-        // 2. Handle Extraction
         extractBtn.addEventListener('click', async () => {
             if (!currentFilePath) return;
             
-            // Update UI to show loading state
             extractBtn.disabled = true;
             extractBtn.innerText = "Processing OCR (This may take a minute)...";
             resultsArea.style.display = 'block';
             resultsArea.innerHTML = "Initializing Tesseract Engine...";
 
-            // Call Python through the bridge
             const response = await window.electronAPI.extractData(currentFilePath);
             
-            // Reset button
             extractBtn.disabled = false;
             extractBtn.innerText = "Run Extraction Engine";
 
-            // Display Results
             if (response.success) {
-                // Build the CSS Grid HTML dynamically
+                // Build the CSS Grid HTML dynamically using editable <input> tags
                 let gridHtml = '<div class="serial-grid">';
                 response.serial_numbers.forEach(sn => {
-                    gridHtml += `<div class="serial-item">${sn}</div>`;
+                    gridHtml += `<input type="text" class="serial-item" value="${sn}">`;
                 });
                 gridHtml += '</div>';
 
-                resultsArea.innerHTML = `<strong style="color: #059669;">Success! Found ${response.count} serial numbers:</strong>` + gridHtml;
+                resultsArea.innerHTML = `<span class="success-text">Success! Found ${response.count} serial numbers:</span>` + gridHtml;
+                
+                // Reveal Step 2
+                step2Container.style.display = 'block';
+                downloadResults.innerHTML = "";
             } else {
-                resultsArea.innerHTML = `<strong style="color: red;">Error:</strong><br>${response.error}`;
+                resultsArea.innerHTML = `<span class="error-text">Error:</span><br>${response.error}`;
+            }
+        });
+
+        // --- STEP 2 LOGIC ---
+        downloadBtn.addEventListener('click', async () => {
+            // THE SCRAPER: Read the live, user-edited values directly from the DOM
+            const inputElements = document.querySelectorAll('.serial-item');
+            const finalSerialNumbers = Array.from(inputElements)
+                .map(input => input.value.trim()) // Grab the text
+                .filter(val => val !== "");       // Drop any boxes the user intentionally cleared out
+
+            if (finalSerialNumbers.length === 0) return;
+
+            downloadBtn.disabled = true;
+            downloadBtn.innerText = "Scanning SharePoint & Copying Files...";
+            downloadResults.innerHTML = "";
+
+            const response = await window.electronAPI.downloadReports(finalSerialNumbers);
+
+            downloadBtn.disabled = false;
+            downloadBtn.innerText = "Download Matching Reports";
+
+            if (response.success) {
+                finalDestinationFolder = response.destFolder;
+                
+                let html = `<p class="success-text">Download Complete!</p>
+                            <p>Files Successfully Copied: <b>${response.foundCount}</b></p>
+                            <p>Missing / Not Found: <b>${response.missingCount}</b></p>`;
+
+                if (response.missingCount > 0) {
+                    html += `<div class="missing-box">
+                                <strong>Missing Serial Numbers:</strong><br>
+                                ${response.missingSerials.join('<br>')}
+                             </div>`;
+                }
+
+                html += `<button id="openFolderBtn" style="margin-top: 15px; background-color: #4b5563;">Open Results Folder</button>`;
+                
+                downloadResults.innerHTML = html;
+
+                document.getElementById('openFolderBtn').addEventListener('click', () => {
+                    window.electronAPI.openFolder(finalDestinationFolder);
+                });
+
+            } else {
+                downloadResults.innerHTML = `<span class="error-text">Error connecting to SharePoint:</span><br>${response.error}`;
             }
         });
     </script>

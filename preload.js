@@ -1,10 +1,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// We expose specific, safe APIs to the frontend UI
 contextBridge.exposeInMainWorld('electronAPI', {
-    // Tells the backend to open a Windows File Picker
+    // Step 1: OCR Methods
     selectPdf: () => ipcRenderer.invoke('dialog:selectPdf'),
-    
-    // Tells the backend to run Python on a specific file path
-    extractData: (filePath) => ipcRenderer.invoke('python:extract', filePath)
+    extractData: (filePath) => ipcRenderer.invoke('python:extract', filePath),
+
+    // Step 2: Downloader Methods
+    downloadReports: (serialNumbers) => ipcRenderer.invoke('node:download', serialNumbers),
+    openFolder: (folderPath) => ipcRenderer.invoke('shell:openFolder', folderPath)
 });
