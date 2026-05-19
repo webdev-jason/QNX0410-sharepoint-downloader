@@ -1,0 +1,15 @@
+{
+  "name": "qnx0410-sharepoint-downloader",
+  "version": "1.0.0",
+  "description": "Standalone utility to extract and download QC reports",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "Jason Sparks",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^29.0.0"
+  }
+}

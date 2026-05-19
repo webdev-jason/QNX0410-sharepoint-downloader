@@ -1,0 +1,12 @@
+# Node.js dependencies
+node_modules/
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Electron build output (we will use this later)
+dist/
+build/
+*.exe
