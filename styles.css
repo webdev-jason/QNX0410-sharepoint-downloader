@@ -6,6 +6,9 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin: 0;
+    height: 100vh;
+    box-sizing: border-box;
 }
 
 .container {
@@ -14,7 +17,29 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     width: 100%;
-    max-width: 800px;
+    height: 100%; /* Stretch to fill the maximized window */
+    box-sizing: border-box;
+    display: flex; /* Activate Flexbox */
+}
+
+/* --- New 2-Column Layout --- */
+.main-layout {
+    display: flex;
+    width: 100%;
+    gap: 30px;
+}
+
+.column {
+    flex: 1; /* Both columns take up exactly 50% of the space */
+    display: flex;
+    flex-direction: column;
+}
+
+.vertical-divider {
+    width: 2px;
+    background-color: #e5e7eb;
+    border-radius: 2px;
+    margin: 0 10px;
 }
 
 h2 {
@@ -59,9 +84,9 @@ button:disabled {
     background-color: #f9fafb;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
-    max-height: 400px;
     overflow-y: auto;
     display: none;
+    flex-grow: 1; /* Allow the results area to stretch downwards */
 }
 
 /* --- CSS Grid Layout --- */
@@ -72,7 +97,6 @@ button:disabled {
     margin-top: 15px;
 }
 
-/* Updated to support <input> elements */
 .serial-item {
     background-color: #ffffff;
     border: 1px solid #d1d5db;
@@ -87,14 +111,12 @@ button:disabled {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* Give the user visual feedback when they click to edit */
 .serial-item:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
-hr { border: 0; border-top: 1px solid #e5e7eb; margin: 30px 0; }
 .success-text { color: #059669; font-weight: bold; }
 .error-text { color: #dc2626; font-weight: bold; }
 .missing-box { background: #fef2f2; border: 1px solid #fca5a5; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 13px;}

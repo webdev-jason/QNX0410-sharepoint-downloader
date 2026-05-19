@@ -6,8 +6,9 @@ const { execFile } = require('child_process');
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
-    width: 800,
+    width: 1200,
     height: 800,
+    show: false, 
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -16,6 +17,11 @@ function createWindow () {
   });
 
   mainWindow.loadFile('index.html');
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize();
+    mainWindow.show();
+  });
 }
 
 app.whenReady().then(() => {
@@ -59,7 +65,6 @@ app.whenReady().then(() => {
     try {
       const userProfile = os.homedir();
       
-      // 1. Auto-Detect SharePoint Folder
       let sourceFolder = path.join(userProfile, 'proteor.com', 'QualityControlDataSync - GC_Outoing_QC');
       
       if (!fs.existsSync(sourceFolder)) {
@@ -71,28 +76,23 @@ app.whenReady().then(() => {
         sourceFolder = filePaths[0];
       }
 
-      // 2. Create Destination Folder in Downloads
-      const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const today = new Date().toISOString().split('T')[0];
       const destFolder = path.join(userProfile, 'Downloads', `${today} - QNX0401 Test Reports`);
       
       if (!fs.existsSync(destFolder)) {
         fs.mkdirSync(destFolder, { recursive: true });
       }
 
-      // 3. Process Files
       let foundCount = 0;
       let missingCount = 0;
       let missingSerials = [];
 
-      // Read all files in the directory once (Much faster than pinging the drive for every serial number)
       const allFiles = fs.readdirSync(sourceFolder);
 
       for (const sn of serialNumbers) {
-        // Find all files that start with this serial number and are PDFs
         const matches = allFiles.filter(f => f.startsWith(sn) && f.toLowerCase().endsWith('.pdf'));
 
         if (matches.length > 0) {
-          // Find the newest file if there are multiple revisions
           let newestFile = matches[0];
           let newestTime = fs.statSync(path.join(sourceFolder, newestFile)).mtimeMs;
 
@@ -104,7 +104,6 @@ app.whenReady().then(() => {
             }
           }
 
-          // Copy the newest file to the destination
           fs.copyFileSync(path.join(sourceFolder, newestFile), path.join(destFolder, newestFile));
           foundCount++;
         } else {
@@ -113,8 +112,7 @@ app.whenReady().then(() => {
         }
       }
 
-      // Automatically open the folder for the user when done
-      shell.openPath(destFolder);
+      // REMOVED: shell.openPath(destFolder); -> We no longer force the folder open!
 
       return { success: true, foundCount, missingCount, missingSerials, destFolder };
       
@@ -123,7 +121,6 @@ app.whenReady().then(() => {
     }
   });
 
-  // Listener to let the UI open a folder directly
   ipcMain.handle('shell:openFolder', (event, folderPath) => {
     shell.openPath(folderPath);
   });

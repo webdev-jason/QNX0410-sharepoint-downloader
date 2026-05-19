@@ -8,21 +8,28 @@
 </head>
 <body>
     <div class="container">
-        <h2>Step 1: Extract Serial Numbers</h2>
-        <button id="selectBtn">Select PDF Scan</button>
-        <div id="filePathDisplay">No file selected</div>
-        <button id="extractBtn" disabled>Run Extraction Engine</button>
-        
-        <div id="resultsArea"></div>
+        <div class="main-layout">
+            
+            <div class="column">
+                <h2>Step 1: Extract Serial Numbers</h2>
+                <button id="selectBtn">Select PDF Scan</button>
+                <div id="filePathDisplay">No file selected</div>
+                <button id="extractBtn" disabled>Extract Serial Numbers</button>
+                
+                <div id="resultsArea"></div>
+            </div>
 
-        <div id="step2Container" style="display: none;">
-            <hr>
-            <h2>Step 2: Download QC Reports</h2>
-            <p style="font-size: 13px; text-align: center; color: #4b5563; margin-top: -10px; margin-bottom: 15px;">
-                <i>Review the serial numbers above. You can click into any box to correct OCR mistakes before downloading.</i>
-            </p>
-            <button id="downloadBtn" style="background-color: #059669;">Download Matching Reports</button>
-            <div id="downloadResults" style="margin-top: 15px; text-align: center;"></div>
+            <div class="vertical-divider"></div>
+
+            <div class="column">
+                <div id="step2Container" style="display: none; height: 100%;">
+                    <h2>Step 2: Download QC Reports</h2>
+                    
+                    <button id="downloadBtn" style="background-color: #059669;">Download Matching Reports</button>
+                    <div id="downloadResults" style="margin-top: 15px; text-align: center;"></div>
+                </div>
+            </div>
+            
         </div>
     </div>
 
@@ -31,13 +38,11 @@
         let currentFilePath = null;
         let finalDestinationFolder = null;
         
-        // Step 1 Elements
+        // Elements
         const selectBtn = document.getElementById('selectBtn');
         const extractBtn = document.getElementById('extractBtn');
         const filePathDisplay = document.getElementById('filePathDisplay');
         const resultsArea = document.getElementById('resultsArea');
-        
-        // Step 2 Elements
         const step2Container = document.getElementById('step2Container');
         const downloadBtn = document.getElementById('downloadBtn');
         const downloadResults = document.getElementById('downloadResults');
@@ -60,24 +65,34 @@
             extractBtn.disabled = true;
             extractBtn.innerText = "Processing OCR (This may take a minute)...";
             resultsArea.style.display = 'block';
-            resultsArea.innerHTML = "Initializing Tesseract Engine...";
+            
+            // CHANGED: Removed technical jargon from the loading state
+            resultsArea.innerHTML = "Reading document, please wait...";
 
             const response = await window.electronAPI.extractData(currentFilePath);
             
             extractBtn.disabled = false;
-            extractBtn.innerText = "Run Extraction Engine";
+            extractBtn.innerText = "Extract Serial Numbers";
 
             if (response.success) {
-                // Build the CSS Grid HTML dynamically using editable <input> tags
                 let gridHtml = '<div class="serial-grid">';
                 response.serial_numbers.forEach(sn => {
                     gridHtml += `<input type="text" class="serial-item" value="${sn}">`;
                 });
                 gridHtml += '</div>';
 
-                resultsArea.innerHTML = `<span class="success-text">Success! Found ${response.count} serial numbers:</span>` + gridHtml;
+                // CHANGED: Trimmed down the warning message to be more direct
+                resultsArea.innerHTML = `
+                    <div style="margin-bottom: 15px;">
+                        <div class="success-text" style="margin-bottom: 10px; font-size: 16px;">Success! Found ${response.count} serial numbers:</div>
+                        <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 4px; font-size: 13px; color: #92400e; display: flex; align-items: flex-start; gap: 10px;">
+                            <span style="font-size: 16px;">⚠️</span>
+                            <div>
+                                <strong>ACTION REQUIRED:</strong> You must visually verify these numbers against the physical document. Click any box to correct errors before downloading.
+                            </div>
+                        </div>
+                    </div>` + gridHtml;
                 
-                // Reveal Step 2
                 step2Container.style.display = 'block';
                 downloadResults.innerHTML = "";
             } else {
@@ -87,11 +102,10 @@
 
         // --- STEP 2 LOGIC ---
         downloadBtn.addEventListener('click', async () => {
-            // THE SCRAPER: Read the live, user-edited values directly from the DOM
             const inputElements = document.querySelectorAll('.serial-item');
             const finalSerialNumbers = Array.from(inputElements)
-                .map(input => input.value.trim()) // Grab the text
-                .filter(val => val !== "");       // Drop any boxes the user intentionally cleared out
+                .map(input => input.value.trim())
+                .filter(val => val !== "");
 
             if (finalSerialNumbers.length === 0) return;
 
@@ -118,7 +132,11 @@
                              </div>`;
                 }
 
-                html += `<button id="openFolderBtn" style="margin-top: 15px; background-color: #4b5563;">Open Results Folder</button>`;
+                html += `
+                    <div style="margin-top: 25px; font-size: 13px; color: #4b5563; word-break: break-all;">
+                        Saved to:<br><b>${response.destFolder}</b>
+                    </div>
+                    <button id="openFolderBtn" style="margin-top: 10px; background-color: #4b5563;">Open Results Folder</button>`;
                 
                 downloadResults.innerHTML = html;
 
