@@ -1,35 +1,69 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { execFile } = require('child_process');
 
 function createWindow () {
-  // Create the native desktop browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 700,
     webPreferences: {
-      // The preload script acts as a secure bridge between the UI and the OS
       preload: path.join(__dirname, 'preload.js'),
-      // Security best practices: keep Node integration disabled in the UI
       nodeIntegration: false,
       contextIsolation: true
     }
   });
 
-  // Load the frontend UI
   mainWindow.loadFile('index.html');
 }
 
-// When Electron is ready, create the window
 app.whenReady().then(() => {
+  
+  // IPC Listener 1: Open the native Windows file picker
+  ipcMain.handle('dialog:selectPdf', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Select Scanned PDF',
+      properties: ['openFile'],
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+    });
+    if (!canceled) {
+      return filePaths[0]; // Return the selected path to the frontend
+    }
+    return null;
+  });
+
+  // IPC Listener 2: Execute the Python script
+  ipcMain.handle('python:extract', (event, filePath) => {
+    return new Promise((resolve, reject) => {
+      // Point explicitly to the Python executable inside our venv
+      const pythonExe = path.join(__dirname, 'venv', 'Scripts', 'python.exe');
+      const scriptPath = path.join(__dirname, 'extractor.py');
+
+      // Run the Python script in a child process
+      execFile(pythonExe, [scriptPath, filePath], (error, stdout, stderr) => {
+        if (error) {
+          console.error('Python Error:', stderr);
+          resolve({ success: false, error: stderr || error.message });
+          return;
+        }
+        
+        try {
+          // Parse the JSON printed by the Python script
+          const result = JSON.parse(stdout);
+          resolve(result);
+        } catch (parseError) {
+          resolve({ success: false, error: 'Failed to parse Python output.' });
+        }
+      });
+    });
+  });
+
   createWindow();
 
   app.on('activate', function () {
-    // macOS specific functionality: re-create a window if dock icon is clicked
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-// Quit when all windows are closed, except on macOS
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
 });

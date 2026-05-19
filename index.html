@@ -2,37 +2,118 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
     <title>QNX0410 Extraction & Downloader</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f3f4f6;
             color: #1f2937;
-            padding: 2rem;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        h1 {
-            color: #2563eb;
-        }
         .container {
             background: white;
-            padding: 2rem;
-            border-radius: 8px;
+            padding: 30px;
+            border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            text-align: center;
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            width: 100%;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #1d4ed8; }
+        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        
+        #filePathDisplay {
+            font-size: 13px;
+            color: #4b5563;
+            margin-bottom: 20px;
+            word-break: break-all;
+            min-height: 20px;
+        }
+        #resultsArea {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>System Ready</h1>
-        <p>Electron frontend successfully connected to the main process.</p>
-        <p>Awaiting UI controls and Python integration...</p>
+        <h2 style="margin-top: 0;">Step 1: Extract Serial Numbers</h2>
+        
+        <button id="selectBtn">Select PDF Scan</button>
+        <div id="filePathDisplay">No file selected</div>
+        
+        <button id="extractBtn" disabled>Run Extraction Engine</button>
+        
+        <div id="resultsArea"></div>
     </div>
+
+    <script>
+        let currentFilePath = null;
+        
+        const selectBtn = document.getElementById('selectBtn');
+        const extractBtn = document.getElementById('extractBtn');
+        const filePathDisplay = document.getElementById('filePathDisplay');
+        const resultsArea = document.getElementById('resultsArea');
+
+        // 1. Handle File Selection
+        selectBtn.addEventListener('click', async () => {
+            const filePath = await window.electronAPI.selectPdf();
+            if (filePath) {
+                currentFilePath = filePath;
+                filePathDisplay.innerText = "Selected: " + filePath;
+                extractBtn.disabled = false; // Enable the next button
+                resultsArea.style.display = 'none';
+            }
+        });
+
+        // 2. Handle Extraction
+        extractBtn.addEventListener('click', async () => {
+            if (!currentFilePath) return;
+            
+            // Update UI to show loading state
+            extractBtn.disabled = true;
+            extractBtn.innerText = "Processing OCR (This may take a minute)...";
+            resultsArea.style.display = 'block';
+            resultsArea.innerText = "Initializing Tesseract Engine...";
+
+            // Call Python through the bridge
+            const response = await window.electronAPI.extractData(currentFilePath);
+            
+            // Reset button
+            extractBtn.disabled = false;
+            extractBtn.innerText = "Run Extraction Engine";
+
+            // Display Results
+            if (response.success) {
+                resultsArea.innerHTML = `<strong>Success! Found ${response.count} serial numbers:</strong><br><br>` + 
+                                        response.serial_numbers.join('<br>');
+            } else {
+                resultsArea.innerHTML = `<strong style="color: red;">Error:</strong><br>${response.error}`;
+            }
+        });
+    </script>
 </body>
 </html>
